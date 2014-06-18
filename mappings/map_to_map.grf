@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?><Graph __version="3.5.0" author="medvegy" created="Sun May 18 12:20:39 CEST 2014" description="Map To Map" guiVersion="3.4.3.P" id="1400408610182" licenseCode="Unlicensed" licenseType="Unknown" modified="Sun May 18 12:20:39 CEST 2014" modifiedBy="medvegy" name="Map_To_Map" revision="1.0" showComponentDetails="false">
+<Global>
+<Metadata __index="0" __referenceCounter="1" __sourcePath="{}/Salesforce" _dataStructure="OBJECT" _id="__id" _type="Input" id="0ec3eacd-c195-442a-8bef-e46d99950b40">
+<Record fieldDelimiter="," name="Salesforce" recordDelimiter="\n\\|\r\n\\|\r" type="delimited">
+<Field __artificialType="_id" __systemManaged="true" name="__id" type="string"/>
+<Field __sourcePath="{}/Salesforce/SiebelContactId" containerType="SINGLE" label="SiebelContactId" name="SiebelId" type="string"/>
+<Field __sourcePath="{}/Salesforce/Email" containerType="SINGLE" label="Email" name="Email" type="string"/>
+<Field __sourcePath="{}/Salesforce/FirstName" containerType="SINGLE" label="FirstName" name="FirstName" type="string"/>
+<Field __sourcePath="{}/Salesforce/LastName" containerType="SINGLE" label="LastName" name="LastName" type="string"/>
+</Record>
+</Metadata>
+<Metadata __index="0" __referenceCounter="1" __sourcePath="{}/Siebel" _dataStructure="OBJECT" _id="__id" _type="Output" id="0d778bfd-d112-41b5-972a-8e7a514f0820">
+<Record fieldDelimiter="," name="Siebel" recordDelimiter="\n\\|\r\n\\|\r" type="delimited">
+<Field __artificialType="_id" __systemManaged="true" name="__id" type="string"/>
+<Field __sourcePath="{}/Siebel/Email Address" containerType="SINGLE" label="Email Address" name="Street_Address" type="string"/>
+<Field __sourcePath="{}/Siebel/Id" containerType="SINGLE" label="Id" name="Id" type="string"/>
+<Field __sourcePath="{}/Siebel/First_x0020Name" containerType="SINGLE" label="First Name" name="First_Name" type="string"/>
+<Field __sourcePath="{}/Siebel/Last_x0020Name" containerType="SINGLE" label="Last Name" name="Last_Name" type="string"/>
+</Record>
+</Metadata>
+<Dictionary>
+<Entry id="DictionaryEntry0" input="true" name="inputPayload" output="false" type="object"/>
+<Entry id="DictionaryEntry1" input="false" name="outputPayload" output="true" type="object"/>
+</Dictionary>
+</Global>
+<Phase number="0">
+<Node enabled="enabled" fileURL="dict:inputPayload" guiName="Map&lt;k,v&gt; READER" guiX="20" guiY="20" id="BEAN_READER0" type="BEAN_READER">
+<attr name="mapping"><![CDATA[<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<Context outPort="0" sequenceField="__id" xpath=".">
+  <Mapping cloverField="SiebelId" trim="true" xpath="SiebelContactId"/>
+  <Mapping cloverField="Email" trim="true" xpath="Email"/>
+  <Mapping cloverField="FirstName" trim="true" xpath="FirstName"/>
+  <Mapping cloverField="LastName" trim="true" xpath="LastName"/>
+</Context>
+]]></attr>
+<attr name="_data_format"><![CDATA[MAP]]></attr>
+</Node>
+<Node enabled="enabled" guiName="Salesforce to Siebel" guiX="460" guiY="20" id="FOREACH_SALESFORCE_SIEBEL" transformClass="com.mulesoft.datamapper.transform.MelRecordTransform" type="REFORMAT">
+<attr name="melScript"><![CDATA[//MEL
+//START -> DO NOT REMOVE
+output.__id = input.__id;
+//END -> DO NOT REMOVE
+output.Id = input.SiebelId;
+output.Street_Address = input.Email;
+output.First_Name = input.FirstName;
+output.Last_Name = input.LastName;]]></attr>
+</Node>
+<Node cacheInMemory="true" enabled="enabled" fileURL="dict:outputPayload" guiName="Map&lt;k,v&gt; WRITER" guiX="900" guiY="20" id="MAP_WRITER0" type="MAP_WRITER">
+<attr name="mapping"><![CDATA[<?xml version="1.0" encoding="UTF-8"?>
+<Siebel xmlns:clover="http://www.cloveretl.com/ns/xmlmapping" clover:inPort="0">
+  <clover:element clover:name="Email Address">$0.Street_Address</clover:element>
+  <Id>$0.Id</Id>
+  <clover:element clover:name="First Name">$0.First_Name</clover:element>
+  <clover:element clover:name="Last Name">$0.Last_Name</clover:element>
+</Siebel>]]></attr>
+<attr name="_data_format"><![CDATA[MAP]]></attr>
+</Node>
+<Edge debugMode="true" fromNode="BEAN_READER0:0" guiBendpoints="" id="Edge0" inPort="Port 0 (in)" metadata="0ec3eacd-c195-442a-8bef-e46d99950b40" outPort="Port 0 (out)" toNode="FOREACH_SALESFORCE_SIEBEL:0"/>
+<Edge debugMode="true" fromNode="FOREACH_SALESFORCE_SIEBEL:0" guiBendpoints="" id="Edge1" inPort="Port 0 (in)" metadata="0d778bfd-d112-41b5-972a-8e7a514f0820" outPort="Port 0 (out)" toNode="MAP_WRITER0:0"/>
+</Phase>
+</Graph>

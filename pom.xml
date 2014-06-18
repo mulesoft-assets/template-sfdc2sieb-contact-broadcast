@@ -1,6 +1,5 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
 	<modelVersion>4.0.0</modelVersion>
 
@@ -16,7 +15,7 @@
 	<name>template-sfdc2sieb-contact-broadcast Anypoint Template Project</name>
 
 	<properties>
-
+		<sfdc.version>5.4.7</sfdc.version>
 	</properties>
 
 	<build>
@@ -27,7 +26,15 @@
 				<configuration>
 					<copyToAppsDirectory>true</copyToAppsDirectory>
 					<inclusions>
-					</inclusions>
+					<inclusion>
+                            <groupId>org.mule.modules</groupId>
+                            <artifactId>mule-module-siebel</artifactId>
+                        </inclusion>
+                    <inclusion>
+                            <groupId>org.mule.modules</groupId>
+                            <artifactId>mule-module-sfdc</artifactId>
+                        </inclusion>
+                    </inclusions>
 				</configuration>
 			</plugin>
 		</plugins>
@@ -35,7 +42,23 @@
 
 	<dependencies>
 
-	</dependencies>
+	<dependency>
+            <groupId>org.mule.modules</groupId>
+            <artifactId>mule-module-siebel</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+    <dependency>
+            <groupId>org.mule.modules</groupId>
+            <artifactId>mule-module-sfdc</artifactId>
+            <version>${sfdc.version}</version>
+        </dependency>
+    <dependency>
+            <groupId>com.mulesoft.muleesb.modules</groupId>
+            <artifactId>mule-module-batch-ee</artifactId>
+            <version>${mule.version}</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
 
 	<repositories>
 		<repository>
