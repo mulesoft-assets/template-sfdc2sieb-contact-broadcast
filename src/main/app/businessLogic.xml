@@ -1,21 +1,107 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking"
+<mule xmlns:data-mapper="http://www.mulesoft.org/schema/mule/ee/data-mapper" xmlns:batch="http://www.mulesoft.org/schema/mule/batch"
+	xmlns:json="http://www.mulesoft.org/schema/mule/json"
+	xmlns:smtp="http://www.mulesoft.org/schema/mule/smtp"
+	xmlns:siebel="http://www.mulesoft.org/schema/mule/siebel" xmlns:sfdc="http://www.mulesoft.org/schema/mule/sfdc" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking"
       xmlns="http://www.mulesoft.org/schema/mule/core"
       xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
       xmlns:spring="http://www.springframework.org/schema/beans"
-      version="EE-3.4.1"
+      version="EE-3.5.0"
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-      xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+      xsi:schemaLocation="http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/smtp http://www.mulesoft.org/schema/mule/smtp/current/mule-smtp.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
 http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
-http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
-    <flow name="mainFlow" doc:name="mainFlow" doc:description="This flow is the entry point to the Kick business logic.
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/siebel http://www.mulesoft.org/schema/mule/siebel/current/mule-siebel.xsd
+http://www.mulesoft.org/schema/mule/sfdc http://www.mulesoft.org/schema/mule/sfdc/current/mule-sfdc.xsd
+http://www.mulesoft.org/schema/mule/ee/data-mapper http://www.mulesoft.org/schema/mule/ee/data-mapper/current/mule-data-mapper.xsd">
 
-This flow should control the direction of the application, and it should be called by the different endpoints that your Template exposes to trigger it.
+    <batch:job name="migrateContactsBatch">
+        <batch:threading-profile poolExhaustedAction="WAIT"/>
+        <batch:process-records>
+            <batch:step name="getContactFromSiebelStep">
+                <enricher source="#[payload]" target="#[recordVars['siebelContact']]" doc:name="Store payload into variable 'siebelContact'">
+                    <siebel:query-business-components config-ref="OracleSiebelBusinessObjects" businessObjectComponentType="Contact.Contact" doc:name="query Contacts from Siebel" searchExpression="[Email Address] = &quot;#[payload.Email]&quot;">
+		                <siebel:fields-to-retrieve>
+		                	<siebel:fields-to-retrieve>Id</siebel:fields-to-retrieve>
+		                	<siebel:fields-to-retrieve>Email Address</siebel:fields-to-retrieve>
+		                	<siebel:fields-to-retrieve>Last Update - SDQ</siebel:fields-to-retrieve>
+		                </siebel:fields-to-retrieve>
+                    </siebel:query-business-components>
+                </enricher>
+					<expression-component
+						doc:name="prepare for upsert"><![CDATA[// setup ID
+	if (!(recordVars['siebelContact'] instanceof NullPayload) && recordVars['siebelContact'].size() >0) {
+		// Add siebel ID as it is an update
+	    payload.put('SiebelContactId', recordVars['siebelContact'].get(0).get('Id'))
+	}
+	]]></expression-component>
+            </batch:step>
+            <batch:step name="findOrCreateAccountInSiebelSetp" accept-expression="'syncAccount' == '${account.sync.policy}'">
+            <choice doc:name="Choice">
+               	<when expression="#[payload['Account'] != null]">
+                <enricher source="#[payload]" target="#[flowVars['accountInSiebel']]" doc:name="store result in accountInSiebel">
+                    <siebel:query-business-components config-ref="OracleSiebelBusinessObjects" businessObjectComponentType="Account.Account" doc:name="query Accounts from Siebel" searchExpression="[Name] = &quot;#[payload['Account']['Name']]&quot;">
+		                <siebel:fields-to-retrieve>
+		                	<siebel:fields-to-retrieve>Id</siebel:fields-to-retrieve>
+		                	<siebel:fields-to-retrieve>Name</siebel:fields-to-retrieve>
+		                	<siebel:fields-to-retrieve>Email Address</siebel:fields-to-retrieve>
+		                	<siebel:fields-to-retrieve>Last Update - SDQ</siebel:fields-to-retrieve>
+		                </siebel:fields-to-retrieve>
+                    </siebel:query-business-components>
+                </enricher>
+                <choice doc:name="Choice">
+                    <when expression="#[flowVars['accountInSiebel'].isEmpty()]">
+                        <enricher doc:name="store result in idOfAccountInSiebel" target="#[recordVars['idOfAccountInSiebel']]">
+	                        <processor-chain doc:name="Processor Chain">
+                                <expression-component doc:name="remove unnecessary fields"><![CDATA[payload['Account'].remove('Id');
+payload['Account'].put('NumberOfEmployees', payload['Account']['NumberOfEmployees'] == null ? 0 :  Integer.parseInt(payload['Account']['NumberOfEmployees']) );]]></expression-component>
+                                <set-payload value="#[ [payload['Account']]]" doc:name="Set Payload"/>
+                                <data-mapper:transform config-ref="AccountDataMapper" doc:name="Account DataMapper"/>
+                                <expression-component doc:name="Expression"><![CDATA[ArrayList list = new ArrayList();
+list.add(payload);
+]]></expression-component>
+					            <siebel:create-business-component config-ref="OracleSiebelBusinessObjects" businessObjectComponentType="Account.Account" doc:name="create Account in Siebel">
+					                <siebel:business-component-fields ref="#[payload]"/>
+					            </siebel:create-business-component>
+                                <expression-transformer expression="#[payload.getCreatedObjects().get(0)]" doc:name="get new account id"/>
+	                        </processor-chain>
+                        </enricher>
+                    </when>
+                    <otherwise>
+                        <enricher target="#[recordVars['idOfAccountInSiebel']]" doc:name="store result in idOfAccountInSiebel">
+     	                   <expression-transformer expression="#[flowVars['accountInSiebel'].get(0).get('Id')]" doc:name="get new account id"/>
+                        </enricher>
+                    </otherwise>
+                </choice>
+                <expression-component doc:name="set AccountId"><![CDATA[payload['AccountId']= recordVars['idOfAccountInSiebel'];
+]]></expression-component>
+</when>
+                    <otherwise>
+                        <logger level="INFO" doc:name="Logger" message="There is no Account assigned to this contact. Doing nothing"/>
+                    </otherwise>
+                </choice>
+            </batch:step>
+            <batch:step name="setDummyAccountIdStep" accept-expression="'assignDummyAccount' == '${account.sync.policy}'">
+                <expression-component doc:name="set AccountId"><![CDATA[payload['AccountId']= '${account.id.in.b}';]]></expression-component>
+            </batch:step>
+            <batch:step name="DataTransformationStep">
+                <data-mapper:transform doc:name="Map Salesforce Contact to Siebel Contact" config-ref="DataMapper"/>
+            </batch:step>
+            <batch:step name="createContactsInSiebelStep" accept-expression="!(payload is NullPayload)">
+		        <logger message="Contacts to create/update: #[payload]" level="INFO" doc:name="log Contacts to create/update"/>
+		        <siebel:upsert-business-component config-ref="OracleSiebelBusinessObjects" businessObjectComponentType="Contact.Contact" doc:name="upsert contacts in Siebel">
+		            <siebel:business-component-fields ref="#[payload]"/>
+		        </siebel:upsert-business-component>
+            </batch:step>
+        </batch:process-records>
+        <batch:on-complete>
+			<json:object-to-json-transformer doc:name="transform BatchJobInstance to JSON" />
+			<logger level="INFO" doc:name="log 'broacast has finished'" message="One Way Sync has finished: #[payload]"/>
+        </batch:on-complete>
+    </batch:job>
 
-">
-        <logger message="Running main flow..." level="INFO" doc:name="Logger"/>
-        <set-payload value="#['Main flow run successfully']" doc:name="Set Payload"/>
-        <exception-strategy ref="defaultChoiceExceptionStrategy" doc:name="Reference Exception Strategy"/>
-    </flow>
 </mule>
