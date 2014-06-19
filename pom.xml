@@ -15,7 +15,7 @@
 	<name>template-sfdc2sieb-contact-broadcast Anypoint Template Project</name>
 
 	<properties>
-		<sfdc.version>5.4.7</sfdc.version>
+		<siebel.version>1.0.0</siebel.version>
 	</properties>
 
 	<build>
@@ -45,18 +45,12 @@
 	<dependency>
             <groupId>org.mule.modules</groupId>
             <artifactId>mule-module-siebel</artifactId>
-            <version>1.0.0</version>
+            <version>${siebel.version}</version>
         </dependency>
-    <dependency>
+    	<dependency>
             <groupId>org.mule.modules</groupId>
             <artifactId>mule-module-sfdc</artifactId>
             <version>${sfdc.version}</version>
-        </dependency>
-    <dependency>
-            <groupId>com.mulesoft.muleesb.modules</groupId>
-            <artifactId>mule-module-batch-ee</artifactId>
-            <version>${mule.version}</version>
-            <scope>provided</scope>
         </dependency>
     </dependencies>
 
