@@ -27,7 +27,6 @@ Here you should not:
            	<sfdc:query config-ref="Salesforce"  doc:name="query Contacts with filtering criteria from Salesforce Instance A" query="SELECT Email, FirstName, LastName, Id, LastModifiedDate, MailingCity, MailingState, MailingCountry, MailingPostalCode, Title, Account.Id, Account.Name, Account.AccountNumber, Account.AccountSource, Account.AnnualRevenue, Account.BillingCity, Account.BillingCountry, Account.BillingPostalCode, Account.BillingState, Account.BillingStreet, Account.Description, Account.Fax, Account.Industry, Account.NumberOfEmployees, Account.Ownership, Account.ParentId, Account.Phone, Account.Rating, Account.ShippingCity, Account.ShippingCountry, Account.ShippingPostalCode, Account.ShippingState, Account.ShippingStreet, Account.Sic, Account.SicDesc, Account.Site, Account.TickerSymbol, Account.Type, Account.Website FROM Contact WHERE LastModifiedDate &gt; #[flowVars['lastQueryDate']] AND Email != null AND MailingCountry IN ('U.S.','United States','US')">
           	</sfdc:query>
         </poll>
-        <batch:execute name="migrateContactsBatch" doc:name="Batch Execute"/>
-    
+        <flow-ref name="mainFlow" />
     </flow>
 </mule>
