@@ -72,8 +72,8 @@ list.add(payload);
                         </enricher>
                     </when>
                     <otherwise>
-                        <enricher target="#[recordVars['idOfAccountInSiebel']]" doc:name="store new account id in var 'idOfAccountInSiebel'">
-     	                   <expression-transformer expression="#[flowVars['accountInSiebel'].get(0).get('Id')]" doc:name="get new account id"/>
+                        <enricher target="#[recordVars['idOfAccountInSiebel']]" doc:name="store account id in var 'idOfAccountInSiebel'">
+     	                   <expression-transformer expression="#[flowVars['accountInSiebel'].get(0).get('Id')]" doc:name="get account id"/>
                         </enricher>
                     </otherwise>
                 </choice>
