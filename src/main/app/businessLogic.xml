@@ -7,7 +7,7 @@
       xmlns="http://www.mulesoft.org/schema/mule/core"
       xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
       xmlns:spring="http://www.springframework.org/schema/beans"
-      version="EE-3.5.0"
+      version="EE-3.5.1"
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
       xsi:schemaLocation="http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
 http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
@@ -33,11 +33,11 @@ http://www.mulesoft.org/schema/mule/ee/data-mapper http://www.mulesoft.org/schem
                     </siebel:query-business-components>
                 </enricher>
 					<expression-component
-						doc:name="prepare for upsert"><![CDATA[// setup ID
-	if (!(recordVars['siebelContact'] instanceof NullPayload) && recordVars['siebelContact'].size() >0) {
-		// Add siebel ID as it is an update
-	    payload.put('SiebelContactId', recordVars['siebelContact'].get(0).get('Id'))
-	}
+						doc:name="prepare for update"><![CDATA[// setup ID
+if (!(recordVars['siebelContact'] is NullPayload) && recordVars['siebelContact'].size() >0) {
+	// Add siebel ID as it is an update
+	payload.put('SiebelContactId', recordVars['siebelContact'].get(0).get('Id'))
+}
 	]]></expression-component>
             </batch:step>
             <batch:step name="findOrCreateAccountInSiebelSetp" accept-expression="'syncAccount' == '${account.sync.policy}'">
@@ -55,30 +55,24 @@ http://www.mulesoft.org/schema/mule/ee/data-mapper http://www.mulesoft.org/schem
                 </enricher>
                 <choice doc:name="Choice">
                     <when expression="#[flowVars['accountInSiebel'].isEmpty()]">
-                        <enricher doc:name="store new account id in var 'idOfAccountInSiebel'" target="#[recordVars['idOfAccountInSiebel']]">
+                        <enricher doc:name="store new account id in var 'idOfAccountInSiebel'" target="#[payload['AccountId']]" source="#[payload.getCreatedObjects().get(0)]">
 	                        <processor-chain doc:name="Processor Chain">
                                 <expression-component doc:name="remove unnecessary fields"><![CDATA[payload['Account'].remove('Id');
-payload['Account'].put('NumberOfEmployees', payload['Account']['NumberOfEmployees'] == null ? 0 :  Integer.parseInt(payload['Account']['NumberOfEmployees']) );]]></expression-component>
-                                <set-payload value="#[ [payload['Account']]]" doc:name="set to Salesforce Account"/>
-                                <data-mapper:transform config-ref="AccountDataMapper" doc:name="transform Salesforce account to Siebel account"/>
-                                <expression-component doc:name="prepare account for creation"><![CDATA[ArrayList list = new ArrayList();
-list.add(payload);
+payload['Account'].put('NumberOfEmployees', payload['Account']['NumberOfEmployees'] == null ? 0 :  Integer.parseInt(payload['Account']['NumberOfEmployees']) );
 ]]></expression-component>
+                                <data-mapper:transform config-ref="AccountDataMapper" doc:name="transform Salesforce account to Siebel account"/>
 					            <siebel:create-business-component config-ref="OracleSiebelBusinessObjects" businessObjectComponentType="Account.Account" doc:name="create account in Siebel">
-					                <siebel:business-component-fields ref="#[payload]"/>
+					                <siebel:business-component-fields ref="#[[payload]]"/>
 					            </siebel:create-business-component>
-                                <expression-transformer expression="#[payload.getCreatedObjects().get(0)]" doc:name="get new account id"/>
 	                        </processor-chain>
                         </enricher>
                     </when>
                     <otherwise>
-                        <enricher target="#[recordVars['idOfAccountInSiebel']]" doc:name="store account id in var 'idOfAccountInSiebel'">
+                        <enricher target="#[payload['AccountId']]" doc:name="store account id in var 'idOfAccountInSiebel'">
      	                   <expression-transformer expression="#[flowVars['accountInSiebel'].get(0).get('Id')]" doc:name="get account id"/>
                         </enricher>
                     </otherwise>
                 </choice>
-                <expression-component doc:name="set AccountId in map-payload"><![CDATA[payload['AccountId']= recordVars['idOfAccountInSiebel'];
-]]></expression-component>
 </when>
                     <otherwise>
                         <logger level="INFO" doc:name="log 'There is no Account assigned to this contact'" message="There is no Account assigned to this contact. Doing nothing"/>
@@ -86,12 +80,10 @@ list.add(payload);
                 </choice>
             </batch:step>
             <batch:step name="setDummyAccountIdStep" accept-expression="'assignDummyAccount' == '${account.sync.policy}'">
-                <expression-component doc:name="set AccountId in map-payload"><![CDATA[payload['AccountId']= '${account.id.in.b}';]]></expression-component>
-            </batch:step>
-            <batch:step name="dataTransformationStep">
-                <data-mapper:transform doc:name="transform Salesforce contact to Siebel contact" config-ref="DataMapper"/>
+                <expression-component doc:name="set dummy AccountId"><![CDATA[payload['AccountId'] = '${account.id.in.b}';]]></expression-component>
             </batch:step>
             <batch:step name="createContactsInSiebelStep" accept-expression="!(payload is NullPayload)">
+                <data-mapper:transform doc:name="transform Salesforce contact to Siebel contact" config-ref="DataMapper"/>
 		        <logger message="Contacts to upsert: #[payload]" level="INFO" doc:name="log contacts to upsert"/>
 		        <siebel:upsert-business-component config-ref="OracleSiebelBusinessObjects" businessObjectComponentType="Contact.Contact" doc:name="upsert contacts in Siebel">
 		            <siebel:business-component-fields ref="#[payload]"/>
