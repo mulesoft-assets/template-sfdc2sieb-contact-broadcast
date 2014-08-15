@@ -61,11 +61,9 @@ if (!(recordVars['siebelContact'] is NullPayload) && recordVars['siebelContact']
 payload['Account'].put('NumberOfEmployees', payload['Account']['NumberOfEmployees'] == null ? 0 :  Integer.parseInt(payload['Account']['NumberOfEmployees']) );
 payload = payload['Account'];]]></expression-component>
                                 <data-mapper:transform config-ref="AccountDataMapper" doc:name="transform Salesforce account to Siebel account"/>
-                                        <logger message="#[payload]" level="INFO" category="KA1" doc:name="Logger"/>
 					            <siebel:create-business-component config-ref="OracleSiebelBusinessObjects" businessObjectComponentType="Account.Account" doc:name="create account in Siebel">
 					                <siebel:business-component-fields ref="#[payload]"/>
 					            </siebel:create-business-component>
-                                        <logger message="#[payload.getCreatedObjects().get(0)]" level="INFO" category="KA2" doc:name="Logger"/>
 	                        </processor-chain>
                         </enricher>
                     </when>
