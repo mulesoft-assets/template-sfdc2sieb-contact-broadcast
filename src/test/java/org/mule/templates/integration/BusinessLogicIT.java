@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -19,7 +18,6 @@ import org.junit.Test;
 import org.mule.MessageExchangePattern;
 import org.mule.api.MuleEvent;
 import org.mule.modules.salesforce.bulk.EnrichedSaveResult;
-import org.mule.modules.salesforce.bulk.EnrichedUpsertResult;
 import org.mule.processor.chain.SubflowInterceptingChainLifecycleWrapper;
 import org.mule.templates.builders.SfdcObjectBuilder;
 
@@ -33,7 +31,6 @@ import com.mulesoft.module.batch.BatchTestHelper;
 public class BusinessLogicIT extends AbstractTemplateTestCase {
 
 	protected static final int TIMEOUT = 60;
-	private static final Logger log = Logger.getLogger(BusinessLogicIT.class);
 	private static final String POLL_FLOW_NAME = "triggerFlow";
 	private static final String ACCOUNT_NAME = "Contact Broadcast Test Name";
 	

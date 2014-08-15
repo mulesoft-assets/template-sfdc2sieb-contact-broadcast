@@ -40,10 +40,10 @@ This property is an important one, as it configures what should be the start poi
 + **assignDummyAccount**: it will assign the cotact to an pre existing account in Salesforce instance B. For this it will use the value of  `account.id.in.b`. Finding the Id of the desired Account can be done by executing in your **Sales Force Developer Console** the following query: `SELECT Id, Name, Description FROM Account`.
 
 ### Salesforce Connector configuration
-+ sfdc.username=bob.dylan@sfdc
-+ sfdc.password=DylanPassword123
-+ sfdc.securityToken=avsfwCUl7apQs56Xq2AKi3X
-+ sfdc.url=https://test.salesforce.com/services/Soap/u/28.0
++ sfdc.username=`bob.dylan@sfdc`
++ sfdc.password=`DylanPassword123`
++ sfdc.securityToken=`avsfwCUl7apQs56Xq2AKi3X`
++ sfdc.url=`https://test.salesforce.com/services/Soap/u/28.0`
 
 ### Oracle Siebel Connector configuration
 + sieb.user=`user`

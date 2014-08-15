@@ -55,20 +55,22 @@ if (!(recordVars['siebelContact'] is NullPayload) && recordVars['siebelContact']
                 </enricher>
                 <choice doc:name="Choice">
                     <when expression="#[flowVars['accountInSiebel'].isEmpty()]">
-                        <enricher doc:name="store new account id in var 'idOfAccountInSiebel'" target="#[payload['AccountId']]" source="#[payload.getCreatedObjects().get(0)]">
+                        <enricher doc:name="store new Account ID" target="#[payload['AccountId']]" source="#[payload.getCreatedObjects().get(0)]">
 	                        <processor-chain doc:name="Processor Chain">
                                 <expression-component doc:name="remove unnecessary fields"><![CDATA[payload['Account'].remove('Id');
 payload['Account'].put('NumberOfEmployees', payload['Account']['NumberOfEmployees'] == null ? 0 :  Integer.parseInt(payload['Account']['NumberOfEmployees']) );
-]]></expression-component>
+payload = payload['Account'];]]></expression-component>
                                 <data-mapper:transform config-ref="AccountDataMapper" doc:name="transform Salesforce account to Siebel account"/>
+                                        <logger message="#[payload]" level="INFO" category="KA1" doc:name="Logger"/>
 					            <siebel:create-business-component config-ref="OracleSiebelBusinessObjects" businessObjectComponentType="Account.Account" doc:name="create account in Siebel">
-					                <siebel:business-component-fields ref="#[[payload]]"/>
+					                <siebel:business-component-fields ref="#[payload]"/>
 					            </siebel:create-business-component>
+                                        <logger message="#[payload.getCreatedObjects().get(0)]" level="INFO" category="KA2" doc:name="Logger"/>
 	                        </processor-chain>
                         </enricher>
                     </when>
                     <otherwise>
-                        <enricher target="#[payload['AccountId']]" doc:name="store account id in var 'idOfAccountInSiebel'">
+                        <enricher target="#[payload['AccountId']]" doc:name="store Account ID">
      	                   <expression-transformer expression="#[flowVars['accountInSiebel'].get(0).get('Id')]" doc:name="get account id"/>
                         </enricher>
                     </otherwise>
