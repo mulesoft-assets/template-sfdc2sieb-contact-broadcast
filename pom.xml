@@ -11,7 +11,7 @@
 
 	<artifactId>template-sfdc2sieb-contact-broadcast</artifactId>
 	<packaging>mule</packaging>
-	<version>1.0.3-SNAPSHOT</version>
+	<version>1.0.3</version>
 	<name>template-sfdc2sieb-contact-broadcast Anypoint Template Project</name>
 
 	<properties>
@@ -72,6 +72,6 @@
 		<connection>scm:git:https://github.com/mulesoft/template-sfdc2sieb-contact-broadcast.git</connection>
 		<developerConnection>scm:git:https://github.com/mulesoft/template-sfdc2sieb-contact-broadcast.git</developerConnection>
 		<url>http://github.com/mulesoft/template-sfdc2sieb-contact-broadcast</url>
-	  <tag>v1.0.0</tag>
+	  <tag>v1.0.3</tag>
   </scm>
 </project>
