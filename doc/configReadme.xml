@@ -22,6 +22,11 @@ To make this Anypoint Template run, there are certain preconditions that must be
 **Failling to do so could lead to unexpected behavior of the template.**
 ]]>
 		</section>
+		<section id="sieb_dst">
+<![CDATA[
+In order to make the siebel connector work smoothly you have to provide the correct version of the siebel jars (Siebel.jar, SiebelJI_enu.jar) that works with your Siebel installation.
+]]>
+		</section>
 		<section id="application_configuration">
 		<![CDATA[
 + polling.frequency `10000`  
