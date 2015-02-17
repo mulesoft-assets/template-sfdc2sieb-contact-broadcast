@@ -7,7 +7,7 @@
       xmlns="http://www.mulesoft.org/schema/mule/core"
       xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
       xmlns:spring="http://www.springframework.org/schema/beans"
-      version="EE-3.5.1"
+      version="EE-3.5.2"
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
       xsi:schemaLocation="http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
 http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
@@ -79,9 +79,7 @@ payload = payload['Account'];]]></expression-component>
                     </otherwise>
                 </choice>
             </batch:step>
-            <batch:step name="setDummyAccountIdStep" accept-expression="'assignDummyAccount' == '${account.sync.policy}'">
-                <expression-component doc:name="set dummy AccountId"><![CDATA[payload['AccountId'] = '${account.id.in.b}';]]></expression-component>
-            </batch:step>
+
             <batch:step name="createContactsInSiebelStep" accept-expression="!(payload is NullPayload)">
                 <data-mapper:transform doc:name="transform Salesforce contact to Siebel contact" config-ref="DataMapper"/>
 		        <logger message="Contacts to upsert: #[payload]" level="INFO" doc:name="log contacts to upsert"/>

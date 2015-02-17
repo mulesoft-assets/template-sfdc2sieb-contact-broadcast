@@ -87,7 +87,7 @@ column='486'
 
 There may be a few things that you need to know regarding Siebel, in order for this template to work.
 
-This Anypoint Template may be using date time/timestamp fields from the Siebe in order to do comparisons and take further actions.
+This Anypoint Template may be using date time/timestamp fields from the Siebel in order to do comparisons and take further actions.
 While the template handles the time zone by sending all such fields in a neutral time zone, it can not find out on its on the time zone in which the Siebel instance is on.
 It will be up to the user of this template to provide such information. To find out more about Siebel time zones please check the following [link](http://docs.oracle.com/cd/B40099_02/books/Fundamentals/Fund_settingoptions3.html)
 
@@ -96,6 +96,7 @@ It will be up to the user of this template to provide such information. To find 
 ### As destination of data
 
 In order to make the siebel connector work smoothly you have to provide the correct version of the siebel jars (Siebel.jar, SiebelJI_enu.jar) that works with your Siebel installation.
+
 
 
 # Run it! <a name="runit"/>
@@ -155,14 +156,11 @@ This are the miliseconds (also different time units can be used) that will run b
 + watermark.default.expression `2014-02-25T11:00:00.000Z`  
 This property is an important one, as it configures what should be the start point of the synchronization.The date format accepted in SFDC Query Language is either *YYYY-MM-DDThh:mm:ss+hh:mm* or you can use Constants. [More information about Dates in SFDC](http://www.salesforce.com/us/developer/docs/officetoolkit/Content/sforce_api_calls_soql_select_dateformats.htm)
 + polling.startDelayMillis `100`
-+ account.id.in.b= `001n00003fMWXA2`
-+ account.sync.policy `syncAccount`
 
-**Note:** the property **account.sync.policy** can take any of the three following values: 
+**Note:** the property **account.sync.policy** can take any of the two following values: 
 
 + **empty_value**: if the propety has no value assigned to it then application will do nothing in what respect to the account and it'll just move the contact over.
 + **syncAccount**: it will try to create the contact's account should this is not pressent in the Salesforce instance B.
-+ **assignDummyAccount**: it will assign the cotact to an pre existing account in Salesforce instance B. For this it will use the value of  `account.id.in.b`. Finding the Id of the desired Account can be done by executing in your **Sales Force Developer Console** the following query: `SELECT Id, Name, Description FROM Account`.
 
 ### Salesforce Connector configuration
 + sfdc.username=`bob.dylan@sfdc`
