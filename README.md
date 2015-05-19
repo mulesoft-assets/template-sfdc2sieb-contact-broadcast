@@ -181,15 +181,7 @@ This property is an important one, as it configures what should be the start poi
 + sieb.port=`2321`
 
 # API Calls <a name="apicalls"/>
-Salesforce imposes limits on the number of API Calls that can be made. Therefore calculating this amount may be an important factor to consider. The Anypoint Template calls to the API can be calculated using the formula:
-
-***1 + X + X / 200***
-
-Being ***X*** the number of Contacts to be synchronized on each run. 
-
-The division by ***200*** is because, by default, Contacts are gathered in groups of 200 for each Upsert API Call in the commit step. Also consider that this calls are executed repeatedly every polling cycle.	
-
-For instance if 10 records are fetched from origin instance, then 12 api calls will be made (1 + 10 + 1).
+Salesforce imposes limits on the number of API Calls that can be made. However, in this template, only one call per poll cycle is done to retrieve all the information required.
 
 
 # Customize It!<a name="customizeit"/>

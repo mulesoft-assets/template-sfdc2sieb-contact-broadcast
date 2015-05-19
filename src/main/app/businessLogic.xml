@@ -5,7 +5,6 @@
 	  xmlns:json="http://www.mulesoft.org/schema/mule/json"
 	  xmlns:smtp="http://www.mulesoft.org/schema/mule/smtp"
 	  xmlns:siebel="http://www.mulesoft.org/schema/mule/siebel" 
-	  xmlns:sfdc="http://www.mulesoft.org/schema/mule/sfdc"
       xmlns="http://www.mulesoft.org/schema/mule/core"
       xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
       version="EE-3.6.2"
@@ -15,7 +14,6 @@ http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/jso
 http://www.mulesoft.org/schema/mule/smtp http://www.mulesoft.org/schema/mule/smtp/current/mule-smtp.xsd
 http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/siebel http://www.mulesoft.org/schema/mule/siebel/current/mule-siebel.xsd
-http://www.mulesoft.org/schema/mule/sfdc http://www.mulesoft.org/schema/mule/sfdc/current/mule-sfdc.xsd
 http://www.mulesoft.org/schema/mule/ee/data-mapper http://www.mulesoft.org/schema/mule/ee/data-mapper/current/mule-data-mapper.xsd">
 
     <batch:job name="migrateContactsBatch">
