@@ -28,14 +28,14 @@ Please review the terms of the license before downloading and using this templat
 # Use Case <a name="usecase"/>
 I want to synchronize contacts from Salesforce to Siebel.
 
-This Template should serve as a foundation for the process of migrating contacts from Salesforce to Siebel, being able to specify filtering criteria and desired behavior when an contact already exists in the Siebel. 
+This Template should serve as a foundation for the process of migrating contacts from Salesforce to Siebel, being able to specify filtering criteria and desired behavior when a contact already exists in the Siebel instance. 
 
-As implemented, this Template leverage the [Batch Module](http://www.mulesoft.org/documentation/display/current/Batch+Processing).
-The batch job is divided in Input, Process and On Complete stages.
-During the Input stage the Template will go to the Salesforce and query all the existing Contacts that match the filter criteria.
-During the Process stage, each Salesforce Contact will be filtered depending on, if it has an existing matching Contact in the Siebel and if the last updated date of the later is greater than the one of Salesforce.
-The last step of the Process stage will group the contacts and create them in Siebel.
-Finally during the On Complete stage the Template will both output statistics data into the console and send a notification email with the results of the batch execution.
+As implemented, this Template leverages the [Batch Module](http://www.mulesoft.org/documentation/display/current/Batch+Processing).
+The batch job is divided into Input, Process and On Complete stages.
+During the Input stage, the Template will query Salesforce for all the existing Contacts that match the filtering criteria.
+In the Process stage, if the *accountSyncPolicy* is set to 'syncAccount', the Account under which the Contact belongs is created in the Siebel instance (if it does not exist).
+The last step of the Process stage will create/update contacts in Siebel.
+Finally during the On Complete stage the Template will output statistics data into the console.
 
 # Considerations <a name="considerations"/>
 
@@ -95,7 +95,7 @@ It will be up to the user of this template to provide such information. To find 
 
 ### As destination of data
 
-In order to make the siebel connector work smoothly you have to provide the correct version of the siebel jars (Siebel.jar, SiebelJI_enu.jar) that works with your Siebel installation.
+In order to make the Siebel connector work smoothly you have to provide the siebel jars (Siebel.jar, SiebelJI_enu.jar) of correct version of that work with your Siebel installation.
 
 
 
@@ -154,17 +154,17 @@ Mule Studio provides you with really easy way to deploy your Template directly t
 ## Properties to be configured (With examples) <a name="propertiestobeconfigured"/>
 In order to use this Mule Anypoint Template you need to configure properties (Credentials, configurations, etc.) either in properties file or in CloudHub as Environment Variables. Detail list with examples:
 ### Application configuration
-+ polling.frequency `10000`  
-This are the miliseconds (also different time units can be used) that will run between two different checks for updates in Salesforce
++ poll.frequencyMillis `10000`  
+These are the miliseconds (also different time units can be used) that will run between two different checks for updates in Salesforce
 
-+ watermark.default.expression `2014-02-25T11:00:00.000Z`  
-This property is an important one, as it configures what should be the start point of the synchronization.The date format accepted in SFDC Query Language is either *YYYY-MM-DDThh:mm:ss+hh:mm* or you can use Constants. [More information about Dates in SFDC](http://www.salesforce.com/us/developer/docs/officetoolkit/Content/sforce_api_calls_soql_select_dateformats.htm)
-+ polling.startDelayMillis `100`
++ watermark.default.expression `2015-10-23T11:00:00.000Z`  
+This property is an important one, as it configures what should be the start point of the synchronization. The date format accepted in SFDC Query Language is either *YYYY-MM-DDThh:mm:ss+hh:mm* or you can use Constants. [More information about Dates in SFDC](http://www.salesforce.com/us/developer/docs/officetoolkit/Content/sforce_api_calls_soql_select_dateformats.htm)
++ poll.startDelayMillis `100`
 
 **Note:** the property **account.sync.policy** can take any of the two following values: 
 
-+ **empty_value**: if the propety has no value assigned to it then application will do nothing in what respect to the account and it'll just move the contact over.
-+ **syncAccount**: it will try to create the contact's account should this is not pressent in the Salesforce instance B.
++ **empty_value**: if the propety has no value assigned to it then application will do nothing in respect to the account and it'll just move the contact over.
++ **syncAccount**: it will try to create the contact's account should this is not present in the Siebel instance.
 
 ### Salesforce Connector configuration
 + sfdc.username `bob.dylan@sfdc`
@@ -204,17 +204,17 @@ In the visual editor they can be found on the *Global Element* tab.
 
 
 ## businessLogic.xml<a name="businesslogicxml"/>
-Functional aspect of the Anypoint Template is implemented on this XML, directed by a batch job that will be responsible for creations/updates. The severeal message processors constitute four high level actions that fully implement the logic of this Anypoint Template:
+Functional aspect of the Anypoint Template is implemented in this XML, directed by a batch job that will be responsible for creations/updates. The severeal message processors constitute four high level actions that fully implement the logic of this Anypoint Template:
 
 1. Job execution is invoked from triggerFlow (endpoints.xml) everytime there is a new query executed asking for created/updated Contacts.
-2. During the Process stage, each Salesforce contact will be filtered depending on, if it has an existing matching contact in the Siebel.
-3. The last step of the Process stage will group the contacts and create/update them in Siebel.
-Finally during the On Complete stage the Anypoint Template will logoutput statistics data into the console.
+2. During the Process stage, if syncAccountPolicy is set to `syncAccount`, Account is synced to Siebel instance.
+3. The last step of the Process stage will create/update contacts in Siebel.
+Finally during the On Complete stage the Anypoint Template will log output statistics data into the console.
 
 
 
 ## endpoints.xml<a name="endpointsxml"/>
-This is file is conformed by a Flow containing the Poll that will periodically query Salesforce for updated/created Contacts that meet the defined criteria in the query. And then executing the batch job process with the query results.
+This file contains a flow containing the Poll that will periodically query Salesforce for updated/created Contacts that meet the defined criteria in the query and then executing the batch job process with the query results.
 
 
 
