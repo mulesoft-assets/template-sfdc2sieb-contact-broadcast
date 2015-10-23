@@ -1,30 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:context="http://www.springframework.org/schema/context"
-      xmlns:data-mapper="http://www.mulesoft.org/schema/mule/ee/data-mapper"
-      xmlns:siebel="http://www.mulesoft.org/schema/mule/siebel"
-      xmlns:sfdc="http://www.mulesoft.org/schema/mule/sfdc"
-      xmlns="http://www.mulesoft.org/schema/mule/core"
-      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
-      version="EE-3.6.2"
-      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-      xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
-http://www.mulesoft.org/schema/mule/ee/data-mapper http://www.mulesoft.org/schema/mule/ee/data-mapper/current/mule-data-mapper.xsd
+<mule xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:siebel="http://www.mulesoft.org/schema/mule/siebel"
+    xmlns:sfdc="http://www.mulesoft.org/schema/mule/sfdc"
+    xmlns="http://www.mulesoft.org/schema/mule/core"
+    xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/siebel http://www.mulesoft.org/schema/mule/siebel/current/mule-siebel.xsd
-http://www.mulesoft.org/schema/mule/sfdc http://www.mulesoft.org/schema/mule/sfdc/current/mule-sfdc.xsd">
+http://www.mulesoft.org/schema/mule/sfdc http://www.mulesoft.org/schema/mule/sfdc/current/mule-sfdc.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-current.xsd">
 	
 	<!-- This is the main configuration files, you should place here all the Connectors configuration and declarations -->
 
     <context:property-placeholder location="common.properties, mule.${mule.env}.properties"/>
 
-    <data-mapper:config name="DataMapper" transformationGraphPath="map_to_map.grf" doc:name="DataMapper"/>
-    <data-mapper:config name="AccountDataMapper" transformationGraphPath="account_map_to_map.grf" doc:name="DataMapper"/>
-
 	<sfdc:config name="Salesforce" username="${sfdc.username}" password="${sfdc.password}" securityToken="${sfdc.securityToken}" url="${sfdc.url}" doc:name="Salesforce" doc:description="Salesforce instance">
 		<sfdc:connection-pooling-profile initialisationPolicy="INITIALISE_ONE" exhaustedAction="WHEN_EXHAUSTED_GROW" />
 	</sfdc:config>
 
-    <siebel:config name="OracleSiebelBusinessObjects" user="${sieb.user}" password="${sieb.password}" server="${sieb.server}" serverName="${sieb.serverName}" objectManager="${sieb.objectManager}" doc:name="Oracle Siebel Business Objects" doc:description="Destination Oracle Siebel Business Objects instance. This is the destination organization, where accounts will be migrated to." port="${sieb.port}">
+    <siebel:config name="OracleSiebelBusinessObjects" user="${sieb.user}" password="${sieb.password}" server="${sieb.server}" port="${sieb.port}" serverName="${sieb.serverName}" objectManager="${sieb.objectManager}" doc:name="Oracle Siebel Business Objects"  dataSenseFilterQueryBusObjects="[Name] = 'Contact' or [Name] = 'Account'">
         <siebel:connection-pooling-profile initialisationPolicy="INITIALISE_ONE" exhaustedAction="WHEN_EXHAUSTED_GROW"/>
     </siebel:config>
 </mule>

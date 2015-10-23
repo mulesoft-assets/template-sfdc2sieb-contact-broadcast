@@ -1,26 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:data-mapper="http://www.mulesoft.org/schema/mule/ee/data-mapper" 
-	  xmlns:batch="http://www.mulesoft.org/schema/mule/batch"
-	  xmlns:json="http://www.mulesoft.org/schema/mule/json"
-	  xmlns:smtp="http://www.mulesoft.org/schema/mule/smtp"
-	  xmlns:siebel="http://www.mulesoft.org/schema/mule/siebel" 
-      xmlns="http://www.mulesoft.org/schema/mule/core"
-      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
-      version="EE-3.6.2"
-      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-      xsi:schemaLocation="http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+<mule xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" 
+	xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" 
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:batch="http://www.mulesoft.org/schema/mule/batch"
+	xmlns:json="http://www.mulesoft.org/schema/mule/json"
+	xmlns:smtp="http://www.mulesoft.org/schema/mule/smtp"
+	xmlns:siebel="http://www.mulesoft.org/schema/mule/siebel" 
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
 http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
 http://www.mulesoft.org/schema/mule/smtp http://www.mulesoft.org/schema/mule/smtp/current/mule-smtp.xsd
 http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/siebel http://www.mulesoft.org/schema/mule/siebel/current/mule-siebel.xsd
-http://www.mulesoft.org/schema/mule/ee/data-mapper http://www.mulesoft.org/schema/mule/ee/data-mapper/current/mule-data-mapper.xsd">
+http://www.mulesoft.org/schema/mule/ee/data-mapper http://www.mulesoft.org/schema/mule/ee/data-mapper/current/mule-data-mapper.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
 
-    <batch:job name="migrateContactsBatch">
+    <batch:job name="syncContactsBatch">
         <batch:threading-profile poolExhaustedAction="WAIT"/>
         <batch:process-records>
             <batch:step name="getContactFromSiebelStep">
-                <enricher source="#[payload]" target="#[recordVars['siebelContact']]" doc:name="store Siebel contact into var 'siebelContact'">
+
+                <enricher source="#[payload.isEmpty() ? null : payload[0].Id" target="#[payload.Id]" doc:name="Enrich payload with Siebel contact Id">
                     <siebel:query-business-components config-ref="OracleSiebelBusinessObjects" businessObjectComponentType="Contact.Contact" doc:name="query Contacts from Siebel" searchExpression="[Email Address] = &quot;#[payload.Email]&quot;">
 		                <siebel:fields-to-retrieve>
 		                	<siebel:fields-to-retrieve>Id</siebel:fields-to-retrieve>
@@ -29,57 +34,63 @@ http://www.mulesoft.org/schema/mule/ee/data-mapper http://www.mulesoft.org/schem
 		                </siebel:fields-to-retrieve>
                     </siebel:query-business-components>
                 </enricher>
-					<expression-component
-						doc:name="prepare for update"><![CDATA[// setup ID
-if (!(recordVars['siebelContact'] is NullPayload) && recordVars['siebelContact'].size() >0) {
-	// Add siebel ID as it is an update
-	payload.put('SiebelContactId', recordVars['siebelContact'].get(0).get('Id'))
-}
-	]]></expression-component>
+
             </batch:step>
-            <batch:step name="findOrCreateAccountInSiebelSetp" accept-expression="'syncAccount' == '${account.sync.policy}'">
-            <choice doc:name="Choice">
-               	<when expression="#[payload['Account'] != null]">
-                <enricher source="#[payload]" target="#[flowVars['accountInSiebel']]" doc:name="store Siebel account in var 'accountInSiebel'">
-                    <siebel:query-business-components config-ref="OracleSiebelBusinessObjects" businessObjectComponentType="Account.Account" doc:name="query account from Siebel" searchExpression="[Name] = &quot;#[payload['Account']['Name']]&quot;">
-		                <siebel:fields-to-retrieve>
-		                	<siebel:fields-to-retrieve>Id</siebel:fields-to-retrieve>
-		                	<siebel:fields-to-retrieve>Name</siebel:fields-to-retrieve>
-		                	<siebel:fields-to-retrieve>Email Address</siebel:fields-to-retrieve>
-		                	<siebel:fields-to-retrieve>Last Update - SDQ</siebel:fields-to-retrieve>
-		                </siebel:fields-to-retrieve>
+            <batch:step name="findOrCreateAccountInSiebelStep" accept-expression="'syncAccount' == '${account.sync.policy}' &amp;&amp; payload.Account != null">
+                <enricher source="#[payload.isEmpty() ? null : payload[0].Id]" target="#[payload.AccountId]" doc:name="Enrich payload with AccountId">
+                    <siebel:query-business-components config-ref="OracleSiebelBusinessObjects" businessObjectComponentType="Account.Account" searchExpression="[Name] = &quot;#[payload.Account.Name]&quot;" doc:name="query account from Siebel">
+                        <siebel:fields-to-retrieve>
+                            <siebel:fields-to-retrieve>Id</siebel:fields-to-retrieve>
+                            <siebel:fields-to-retrieve>Name</siebel:fields-to-retrieve>
+                            <siebel:fields-to-retrieve>Email Address</siebel:fields-to-retrieve>
+                            <siebel:fields-to-retrieve>Last Update - SDQ</siebel:fields-to-retrieve>
+                        </siebel:fields-to-retrieve>
                     </siebel:query-business-components>
                 </enricher>
-                <choice doc:name="Choice">
-                    <when expression="#[flowVars['accountInSiebel'].isEmpty()]">
-                        <enricher doc:name="store new Account ID" target="#[payload['AccountId']]" source="#[payload.getCreatedObjects().get(0)]">
-	                        <processor-chain doc:name="Processor Chain">
-                                <expression-component doc:name="remove unnecessary fields"><![CDATA[payload['Account'].remove('Id');
-payload['Account'].put('NumberOfEmployees', payload['Account']['NumberOfEmployees'] == null ? 0 :  Integer.parseInt(payload['Account']['NumberOfEmployees']) );
-payload = payload['Account'];]]></expression-component>
-                                <data-mapper:transform config-ref="AccountDataMapper" doc:name="transform Salesforce account to Siebel account"/>
-					            <siebel:create-business-component config-ref="OracleSiebelBusinessObjects" businessObjectComponentType="Account.Account" doc:name="create account in Siebel">
-					                <siebel:business-component-fields ref="#[payload]"/>
-					            </siebel:create-business-component>
-	                        </processor-chain>
+                <choice doc:name="Does account need to be created?">
+                    <when expression="#[payload.AccountId == null]">
+                        <enricher source="#[payload.getCreatedObjects().get(0)]" target="#[payload.AccountId]" doc:name="Enrich payload with new Account Id">
+                            <processor-chain doc:name="Processor Chain">
+                                <dw:transform-message doc:name="transform Salesforce account to Siebel account">
+                                    <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	Name             : payload.Account.Name,
+	Employees        : payload.Account.NumberOfEmployees,
+	City             : payload.Account.BillingCity,
+	"Street Address" : payload.Account.BillingStreet
+}]]></dw:set-payload>
+                                </dw:transform-message>
+                                <siebel:create-business-component config-ref="OracleSiebelBusinessObjects" businessObjectComponentType="Account.Account" doc:name="create account in Siebel">
+                                    <siebel:business-component-fields ref="#[payload]"/>
+                                </siebel:create-business-component>
+                            </processor-chain>
                         </enricher>
                     </when>
                     <otherwise>
-                        <enricher target="#[payload['AccountId']]" doc:name="store Account ID">
-     	                   <expression-transformer expression="#[flowVars['accountInSiebel'].get(0).get('Id')]" doc:name="get account id"/>
-                        </enricher>
+                        <logger level="INFO" category="Account already exists. Nothing to create." doc:name="Log that the account exists"/>
                     </otherwise>
                 </choice>
-</when>
-                    <otherwise>
-                        <logger level="INFO" doc:name="log 'There is no Account assigned to this contact'" message="There is no Account assigned to this contact. Doing nothing"/>
-                    </otherwise>
-                </choice>
+
             </batch:step>
 
-            <batch:step name="createContactsInSiebelStep" accept-expression="!(payload is NullPayload)">
-                <data-mapper:transform doc:name="transform Salesforce contact to Siebel contact" config-ref="DataMapper"/>
-		        <logger message="Contacts to upsert: #[payload]" level="INFO" doc:name="log contacts to upsert"/>
+            <batch:step name="createContactsInSiebelStep" >
+                <dw:transform-message doc:name="transform Salesforce contact to Siebel contact">
+                    <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	(Id              : payload.Id)           when payload.Id?,
+	(Account         : payload.Account.Name) when payload.AcccountId?,
+	"Email Address"  : payload.Email,
+	"First Name"     : payload.FirstName,
+	"Last Name"      : payload.LastName
+	
+}]]></dw:set-payload>
+                </dw:transform-message>
+
+		        <logger message="Contact to upsert: #[payload]" level="INFO" doc:name="log contacts to upsert"/>
 		        <siebel:upsert-business-component config-ref="OracleSiebelBusinessObjects" businessObjectComponentType="Contact.Contact" doc:name="upsert contacts in Siebel">
 		            <siebel:business-component-fields ref="#[payload]"/>
 		        </siebel:upsert-business-component>
@@ -91,8 +102,8 @@ payload = payload['Account'];]]></expression-component>
         </batch:on-complete>
     </batch:job>
 
-    <flow name="mainFlow" doc:name="mainFlow">
-        <batch:execute name="migrateContactsBatch" doc:name="trigger migrateContactsBatch"/>
+    <flow name="mainFlow" >
+        <batch:execute name="syncContactsBatch" doc:name="trigger migrateContactsBatch"/>
         <exception-strategy ref="defaultChoiceExceptionStrategy" doc:name="catch Exception and call defaultExceptionStrategy"/>
     </flow>
 </mule>
