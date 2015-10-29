@@ -82,11 +82,10 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
 ---
 {
 	(Id              : payload.Id)           when payload.Id?,
-	(Account         : payload.Account.Name) when payload.AcccountId?,
+	(Account         : payload.Account.Name) when p('account.sync.policy') == 'syncAccount',
 	"Email Address"  : payload.Email,
 	"First Name"     : payload.FirstName,
 	"Last Name"      : payload.LastName
-	
 }]]></dw:set-payload>
                 </dw:transform-message>
 
