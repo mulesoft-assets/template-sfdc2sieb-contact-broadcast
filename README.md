@@ -179,6 +179,8 @@ This property is an important one, as it configures what should be the start poi
 + sieb.serverName `serverName`
 + sieb.objectManager `objectManager`
 + sieb.port `2321`
++ sieb.language `ENU`
++ sieb.encoding `utf8`
 
 # API Calls <a name="apicalls"/>
 Salesforce imposes limits on the number of API Calls that can be made. However, in this template, only one call per poll cycle is done to retrieve all the information required.

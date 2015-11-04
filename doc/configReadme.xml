@@ -54,6 +54,8 @@ This property is an important one, as it configures what should be the start poi
 + sieb.serverName `serverName`
 + sieb.objectManager `objectManager`
 + sieb.port `2321`
++ sieb.language `ENU`
++ sieb.encoding `utf8`
 ]]>
 		</section>
 		<section id="api_calls">
