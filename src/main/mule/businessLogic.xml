@@ -165,7 +165,6 @@ payload]]></ee:set-variable>
 output application/java
 ---
 vars.contact ++ {
-	"accountSiebel" : payload[0],
 	"accountSiebel" : payload[0]
 }]]></ee:set-payload>
 			</ee:message>
