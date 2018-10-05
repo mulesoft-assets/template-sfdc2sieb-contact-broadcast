@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:siebel="http://www.mulesoft.org/schema/mule/siebel"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:batch="http://www.mulesoft.org/schema/mule/batch"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/siebel http://www.mulesoft.org/schema/mule/siebel/current/mule-siebel.xsd">
+
+
+	<flow name="businessLogicFlow" doc:id="8759532e-79b7-4789-990c-dc8e162bfd67">
+		<batch:job jobName="migrateContactsBatch" doc:id="204892ae-0d97-4326-beae-310c8d52b7a6"
+			blockSize="${page.size}">
+			<batch:process-records>
+				<batch:step name="getContactsFromSiebelStep" doc:id="9159bd5e-cd40-416c-b3e7-c4dbc4dc12d5">
+					<flow-ref doc:name="Get Contacts from Siebel" doc:id="fc648f37-8f1a-49d7-9521-c19590535c4c"
+						name="getContactsFromSiebel" />
+				</batch:step>
+				<batch:step name="getAccountFromSiebelStep" doc:id="6ddd272e-27bb-40ae-9b10-564d91e2bb50"
+					acceptExpression="#[not isEmpty(payload.Account)]">
+					<flow-ref doc:name="Get Account from Siebel" doc:id="561b4b6e-1db7-455b-b9de-450e2735210a"
+						name="getAccountFromSiebel" />
+				</batch:step>
+
+				<batch:step name="createAccountInSiebelStep" doc:id="b79145c4-8cff-4958-ba2f-103535470a46"
+					acceptExpression="#[(not isEmpty(payload.Account)) and (isEmpty(payload.accountSiebel.Id )) ]">
+					<flow-ref doc:name="Create Account in Siebel" doc:id="dcb3ca02-8130-4a11-8413-ae3a9d137640"
+						name="createAccountInSiebel" />
+				</batch:step>
+				<batch:step name="upsertContactInSiebelStep" doc:id="78a74ab4-9b91-416d-985a-acda2ac377eb">
+					<ee:transform doc:name="Salesforce contact to Siebel contact"
+						doc:id="b0120afa-48e7-4adf-bbc5-e6b8ef2b3eaa">
+						<ee:message>
+							<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"First Name": payload.FirstName,
+	"Last Name": payload.LastName,
+	("Id" : payload.siebelID) if payload.siebelID?,
+	"Email Address": payload.Email,	
+    (
+    "Account":  payload.accountSiebel.Name
+     ) if(
+     	(p('account.sync.policy') == 'syncAccount' ) and
+     	(not isEmpty(payload.Account)) and 
+      	(payload.Account.Name !=  payload.siebelPrimaryAccount)
+      ),	
+    
+    "Department": payload.Department,
+    "Home Phone #": payload.HomePhone,
+    "Work Phone #": payload.Phone
+}]]></ee:set-payload>
+						</ee:message>
+						<ee:variables>
+						</ee:variables>
+					</ee:transform>
+					<siebel:upsert-business-component businessObjectComponentType="Contact.Contact" doc:name="Upsert Account in Siebel" doc:id="64471c5a-3666-461d-856a-0c395281e3c6" config-ref="Siebel_JDB_Siebel">
+					</siebel:upsert-business-component>
+					<logger level="INFO" doc:name="Log response"
+						doc:id="4b574606-b0c4-465e-be21-bb6856f1d11f" message="#[output application/json --- payload]" />
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete>
+				<ee:transform doc:name="Prepare migration result"
+					doc:id="c84b4bc4-5a65-41c1-9d0c-f1ebd3d8db7a">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output text/plain
+---
+"Migration Report: \n"
+
+++ "\n Time [milliseconds]: " 		++ payload.elapsedTimeInMillis!
+++ "\n Total Records: "				++ payload.totalRecords!
+++ "\n Successful Records: "		++ payload.successfulRecords!
+++ "\n Failed Records: "			++ payload.failedRecords!
+++ "\n Loaded Records: "			++ payload.loadedRecords!
+++ "\n Processed Records: " 		++ payload.processedRecords!]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Migration process has finished!"
+					doc:id="b7575d38-7dbd-4602-9186-1bbb25234896" message="Migration process has finished: #[payload]" />
+
+			</batch:on-complete>
+
+		</batch:job>
+	</flow>
+
+	<sub-flow name="getContactsFromSiebel" doc:id="aa2653c5-58e7-4b68-8082-552e1f116b0e">
+		<ee:transform doc:name="query Contacts from Siebel"
+			doc:id="f322860c-c0c7-4624-aeee-72b998bd18d5">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{
+	"fields" : ["Id", "First Name", "Last Name", "Work Phone #","Home Phone #",
+	"Email Address", "Fax Phone #",  "Assistant","Department", "Account"],
+	"searchSpec": {
+		"Email Address": "'" ++ payload.Email! ++ "'",
+	}
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="contact"><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<siebel:query-business-components
+			doc:name="Get Contact from Siebel" doc:id="42b8b533-d9e5-4884-bb97-dad5b46ad08c"
+			config-ref="Siebel_JDB_Siebel" businessObjectComponentType="Contact.Contact">
+		</siebel:query-business-components>
+		<ee:transform doc:name="Set Siebel contact ID"
+			doc:id="0da741a6-5bf3-43b1-8a41-4b18c12b2455">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+vars.contact ++ {
+	"siebelID" : payload.Id[0],
+	"siebelPrimaryAccount" : payload.Account[0]
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<remove-variable doc:name="Remove Contact variable"
+			doc:id="2e980702-e435-484f-895f-452b5ec69a44" variableName="contact" />
+
+	</sub-flow>
+
+	
+	<sub-flow name="getAccountFromSiebel" doc:id="57bd38ad-d7f8-4a0d-8a98-fa2cda8569c9">
+		<ee:transform doc:name="Query Account from Siebel"
+			doc:id="135e0779-5988-480a-8997-4bdff6fac907">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{
+	"fields" : ["Id","Name"],
+	"searchSpec": {
+		"Name": "'" ++ payload.Account.Name! ++ "'",
+	}
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="contact"><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<siebel:query-business-components
+			businessObjectComponentType="Account.Account" doc:name="Get Account from Siebel"
+			doc:id="ae33c66b-af9b-4aea-a132-0d8c076c339a" config-ref="Siebel_JDB_Siebel">
+		</siebel:query-business-components>
+		<ee:transform doc:name="Set Siebel Account"
+			doc:id="3913b906-eb97-44e9-a8d0-7194138a9169">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+vars.contact ++ {
+	"accountSiebel" : payload[0],
+	"accountSiebel" : payload[0]
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<remove-variable doc:name="Remove Contact variable"
+			doc:id="19caa4a2-ee24-493c-ac3a-d0b8234b4b77" variableName="contact" />
+
+	</sub-flow>
+
+
+
+	<sub-flow name="createAccountInSiebel" doc:id="01261061-b0f1-4802-b839-2a98c5954a95">
+		<ee:transform doc:name="Account data for Siebel"
+			doc:id="839247f0-45cd-4aad-80d2-b1224791d9df">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{
+	"Name": payload.Account.Name,
+	"Employees": payload.Account.NumberOfEmployees,
+	"Description": payload.Account.Description,
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="contact"><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<siebel:upsert-business-component
+			businessObjectComponentType="Account.Account" doc:name="Create Account in Siebel"
+			doc:id="39602f7f-aea7-42aa-be09-fbad15c69d23" config-ref="Siebel_JDB_Siebel">
+		</siebel:upsert-business-component>
+		<ee:transform doc:name="Set Siebel Account"
+			doc:id="10af57b5-6b37-463f-8cd3-6289ce848b83">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+vars.contact mapObject(value, key, index) -> {
+	(key) : if ( (key as String) != "accountSiebel") value  
+	else {
+		Id : payload.createdObjectId!,
+		Name : vars.contact.Account.Name!
+	}
+} ]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+
+		<remove-variable doc:name="Remove Contact variable"
+			doc:id="92ee6d92-90a3-4d23-8d04-4230e777a74f" variableName="contact" />
+
+	</sub-flow>
+
+</mule>
+
+
+        
