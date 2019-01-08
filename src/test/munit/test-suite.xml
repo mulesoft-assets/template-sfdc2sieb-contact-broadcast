@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:siebel="http://www.mulesoft.org/schema/mule/siebel"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:munit="http://www.mulesoft.org/schema/mule/munit"
+	xmlns:munit-tools="http://www.mulesoft.org/schema/mule/munit-tools"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xsi:schemaLocation="
+		http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+		http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+		http://www.mulesoft.org/schema/mule/munit-tools  http://www.mulesoft.org/schema/mule/munit-tools/current/mule-munit-tools.xsd
+http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/siebel http://www.mulesoft.org/schema/mule/siebel/current/mule-siebel.xsd">
+	<munit:config name="test-suite.xml" doc:name="MUnit configuration" />
+	<configuration-properties doc:name="Configuration properties"
+		doc:id="1d60570a-2966-49c4-8156-c1b73ac74ca9" file="mule.test.properties" />
+	<munit:before-test name="test-suiteBefore_Test"
+		description="Before tests actions" doc:id="775f76f6-8d63-4154-aa78-df823a8944ef">
+		<ee:transform doc:name="Prepare common testing data"
+			doc:id="fa4d75d7-0609-46cd-8ea1-e45c9a729f4d">
+			<ee:message />
+			<ee:variables>
+				<ee:set-variable variableName="testInterpreter1"><![CDATA[%dw 2.0
+output application/java
+var id= randomInt(1000)
+---
+{	
+	FirstName: "TestRecord" ++ id,
+	LastName: "LastName" ++ id,
+    Email: "email" ++ id ++ "@gmail.com", 
+    Department: "testDepartment",
+    HomePhone: "+421999555"
+}
+]]></ee:set-variable>
+				<ee:set-variable variableName="testInterpreter2"><![CDATA[%dw 2.0
+output application/java
+var id= randomInt(1000)
+---
+{
+	FirstName: "TestRecord" ++ id,
+	LastName: "LastName" ++ id,
+	Email: "email" ++ id ++ "@gmail.com",
+	Department: "testDepartment",
+	HomePhone: "+421999555"
+}
+
+]]></ee:set-variable>
+				<ee:set-variable variableName="testInterpreter3"><![CDATA[%dw 2.0
+output application/java
+var id= randomInt(1000)
+---
+{		
+	FirstName: "TestRecord" ++ id,
+	LastName: "LastName" ++ id,
+    Email: "email" ++ id ++ "@gmail.com", 
+    Department: "testDepartment",
+    HomePhone: "+421999555"
+}
+]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<ee:transform doc:name="Prepare testing data in instance Salesforce"
+			doc:id="f39df5e6-3ed8-4d55-b6e8-8367e71d6ceb">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+[  vars.testInterpreter1,vars.testInterpreter2,
+	
+	{		
+		FirstName: vars.testInterpreter3.FirstName,
+		LastName: vars.testInterpreter3.LastName,
+	    Email: "",
+	    Department: vars.testInterpreter3.Department,
+	    HomePhone: vars.testInterpreter3.HomePhone
+	}
+]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<salesforce:create doc:name="Create Contact in instance Salesforce"
+			doc:id="0bd4b390-1e62-43ec-a48c-fc2d099a9a86" config-ref="Salesforce_Config"
+			type="Contact" />
+		<set-variable value="#[payload map ($.id)]" doc:name="Store IDs to variable sfdcIDs"
+			doc:id="88560d39-0ab5-416c-aad3-4f842f8e3a07" variableName="sfdcIDs" />
+
+		<ee:transform doc:name="Prepare testing data in instance Siebel"
+			doc:id="de4491a8-f1e0-41ac-976e-9fb7963741c9">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{
+	"First Name": vars.testInterpreter2.FirstName,
+    "Last Name": "SiebelLastName",
+    "Email Address": vars.testInterpreter2.Email,    
+    "Department": vars.testInterpreter2.Department,
+    "Home Phone #": vars.testInterpreter2.HomePhone,
+    "Work Phone #": vars.testInterpreter2.Phone,
+    "Cellular Phone #": vars.testInterpreter2.MobilePhone
+	
+}
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<siebel:upsert-business-component
+			businessObjectComponentType="Contact.Contact" doc:name="Create Contact in Siebel"
+			doc:id="9ab2df41-d34f-4c8e-b613-8949f9014a8d" config-ref="Siebel_JDB_Siebel" />
+		<set-variable value="#[payload.createdObjectId]"
+			doc:name="Store IDs to variable siebelID" doc:id="97039a60-bc2d-40e3-9a93-a58a84ef4fa2"
+			variableName="siebelID" />
+	</munit:before-test>
+	<munit:test name="test-suite-mainFlowTest" description="Test"
+		doc:id="d0596deb-e4af-47a6-8a43-71939f83ec53">
+		<munit:execution>
+			<flow-ref doc:name="Flow-ref to mainFlow" doc:id="b194bd50-b42c-472f-8c58-8abc286110bf"
+				name="queryFlow" />
+			<flow-ref doc:name="Flow-ref to businessLogicFlow" doc:id="484024da-7ae6-4aaf-beed-d5c5bc224e90" name="businessLogicFlow" />
+			<scripting:execute doc:name="Sleep for 1m until the processing is completed"
+				doc:id="abf32d18-8660-4517-9fa9-e56ca18cc4fe" engine="groovy">
+				<scripting:code>sleep(60000)</scripting:code>
+			</scripting:execute>
+			<flow-ref doc:name="Flow Reference testRecord1" doc:id="66564b3d-a486-4a28-82ef-945770ef6791"
+				name="testRecord1" />
+			<flow-ref doc:name="Flow Reference testRecord2" doc:id="89ca7e58-3ee2-4ae9-8f22-9922cd7a5ee4"
+				name="testRecord2" />
+			<flow-ref doc:name="Flow Reference testRecord3" doc:id="f4004c89-4a00-43eb-9c32-3bdd4c6c91d3" 
+				name="testRecord3"/>
+
+		</munit:execution>
+		<munit:validation>
+			<munit-tools:assert-that doc:name="Assert test migrated testRecord1"
+				doc:id="fdd1795d-4692-4e8d-ba9f-35b5d3121186" expression="#[vars.resultTestRecord1]"
+				is="#[MunitTools::equalTo(1)]" />
+			<munit-tools:assert-that doc:name="Assert test updated testRecord2"
+				doc:id="f28924c9-de58-408e-91cd-18eda57ea0ea" expression="#[vars.resultTestRecord2]"
+				is="#[MunitTools::equalTo(true)]" />
+			<munit-tools:assert-that doc:name="Assert test not migrated testRecord3"
+			doc:id="5407089e-7060-4952-902d-4f41746ed3f4" expression="#[vars.resultTestRecord3]"
+			is="#[MunitTools::equalTo(0)]" />
+		</munit:validation>
+	</munit:test>
+	<sub-flow name="testRecord1" doc:id="d56875b0-d885-4852-9475-4ca1d3596f0c">
+		<ee:transform doc:name="Set query for Siebel"
+			doc:id="5d902a6f-4b78-46b0-9c62-7984d7bc0fc6">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{
+	"fields" : ["Id", "First Name", "Last Name", "Work Phone #","Home Phone #",
+	"Email Address", "Fax Phone #",  "Assistant","Department", "Account"],
+	"searchSpec": {
+		"Email Address": "= '"++ vars.testInterpreter1.Email! ++ "'",
+	}
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables>
+			</ee:variables>
+		</ee:transform>
+		<siebel:query-business-components
+			businessObjectComponentType="Contact.Contact" doc:name="Check TestRecord1 in Siebel"
+			doc:id="2553098d-6652-448d-bbb0-4ee685aec040" config-ref="Siebel_JDB_Siebel" />
+		<set-variable value="#[payload[0].Id]" doc:name="Set migrated siebel ID"
+			doc:id="8ce24d88-9618-453d-bc01-9efcac285916" variableName="migratedSiebelID" />
+		<set-variable value='#[sizeOf(payload)]' doc:name="Set result TestRecord1"
+			doc:id="f6f676cf-2080-4866-9e62-3cdc89941bb0" variableName="resultTestRecord1" />
+	</sub-flow>
+	<sub-flow name="testRecord2" doc:id="bd1f1b40-6912-41e9-a9df-773300124cf4">
+		<ee:transform doc:name="Set query for Siebel"
+			doc:id="381c6415-84bd-4ad1-afd8-617385a04308">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{
+	"fields" : ["Id", "First Name", "Last Name", "Work Phone #","Home Phone #",
+	"Email Address", "Fax Phone #",  "Assistant","Department", "Account"],
+	"searchSpec": {
+		"Email Address": "= '"++ vars.testInterpreter2.Email! ++ "'",
+	}
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables />
+		</ee:transform>
+		<siebel:query-business-components
+			businessObjectComponentType="Contact.Contact" doc:name="Check TestRecord2 in Siebel"
+			doc:id="5854e359-551f-4666-830e-73e5554a1c8c" config-ref="Siebel_JDB_Siebel" />
+		<set-variable
+			value='#[payload[0]."Last Name" == (vars.testInterpreter2.LastName)]'
+			doc:name="Set result TestRecord2" doc:id="70d9c473-c777-4d3c-a68c-202005751719"
+			variableName="resultTestRecord2" />
+	</sub-flow>
+	<sub-flow name="testRecord3" doc:id="3f408502-1ccb-4acb-92ff-c4a02c811649">
+		<ee:transform doc:name="Set query for Siebel"
+			doc:id="a8059fbb-745d-4575-92dd-bfd909209128">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{
+	"fields" : ["Id", "First Name", "Last Name", "Work Phone #","Home Phone #",
+	"Email Address", "Fax Phone #",  "Assistant","Department", "Account"],
+	"searchSpec": {
+		"Email Address": "= '"++ vars.testInterpreter3.Email! ++ "'",
+	}
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables>
+			</ee:variables>
+
+
+		</ee:transform>
+		<siebel:query-business-components
+			businessObjectComponentType="Contact.Contact" doc:name="Check TestRecord3 in Siebel"
+			doc:id="8f825413-1c40-4cdc-8ddf-1e9525e630f3" config-ref="Siebel_JDB_Siebel" />
+		<set-variable value='#[sizeOf(payload)]'
+			doc:name="Set result TestRecord3" doc:id="fba55179-630c-42b6-b19c-7ce068a551ad"
+			variableName="resultTestRecord3" />
+	</sub-flow>
+	<munit:after-test name="test-suiteAfter_Test"
+		description="After tests actions" doc:id="2505a93e-5897-4298-8980-5f0852930bc1">
+		<salesforce:delete doc:name="Delete source Contact in Salesforce"
+			doc:id="5defe2a9-3218-4c33-975f-2f7b4618e71f" config-ref="Salesforce_Config">
+			<salesforce:delete-ids><![CDATA[#[vars.sfdcIDs]]]></salesforce:delete-ids>
+		</salesforce:delete>
+		<siebel:delete-business-component
+			doc:name="Delete source Contact in Siebel" doc:id="ef7a6689-533d-4985-bfb4-6c307afc49ae"
+			businessObjectComponentType="Contact.Contact" businessComponentId="#[vars.siebelID]"
+			config-ref="Siebel_JDB_Siebel" />
+		<siebel:delete-business-component
+			doc:name="Delete migrated Contact in Siebel" doc:id="54be3e6d-cf0e-438c-a010-a863536d141c"
+			businessObjectComponentType="Contact.Contact" businessComponentId="#[vars.migratedSiebelID]"
+			config-ref="Siebel_JDB_Siebel" />
+	</munit:after-test>
+
+</mule>
