@@ -34,6 +34,9 @@ In order to make the Siebel connector work smoothly you have to provide the sieb
 These are the miliseconds (also different time units can be used) that will run between two different checks for updates in Salesforce
 + scheduler.start.delay `100`
 
+#### Batch Configuration
+- page.size `100`
+
 + watermark.default.expression `2015-10-23T11:00:00.000Z`  
 This property is an important one, as it configures what should be the start point of the synchronization. The date format accepted in SFDC Query Language is either *YYYY-MM-DDThh:mm:ss+hh:mm* or you can use Constants. [More information about Dates in SFDC](https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/sforce_api_calls_soql_select_dateformats.htm)
 
