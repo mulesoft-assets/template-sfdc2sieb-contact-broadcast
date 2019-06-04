@@ -28,10 +28,10 @@ http://www.mulesoft.org/schema/mule/siebel http://www.mulesoft.org/schema/mule/s
 output application/java
 var id= randomInt(1000)
 ---
-{	
+{
 	FirstName: "TestRecord" ++ id,
 	LastName: "LastName" ++ id,
-    Email: "email" ++ id ++ "@gmail.com", 
+    Email: "email" ++ id ++ "@gmail.com",
     Department: "testDepartment",
     HomePhone: "+421999555"
 }
@@ -53,10 +53,10 @@ var id= randomInt(1000)
 output application/java
 var id= randomInt(1000)
 ---
-{		
+{
 	FirstName: "TestRecord" ++ id,
 	LastName: "LastName" ++ id,
-    Email: "email" ++ id ++ "@gmail.com", 
+    Email: "email" ++ id ++ "@gmail.com",
     Department: "testDepartment",
     HomePhone: "+421999555"
 }
@@ -70,8 +70,8 @@ var id= randomInt(1000)
 output application/java
 ---
 [  vars.testInterpreter1,vars.testInterpreter2,
-	
-	{		
+
+	{
 		FirstName: vars.testInterpreter3.FirstName,
 		LastName: vars.testInterpreter3.LastName,
 	    Email: "",
@@ -96,12 +96,12 @@ output application/java
 {
 	"First Name": vars.testInterpreter2.FirstName,
     "Last Name": "SiebelLastName",
-    "Email Address": vars.testInterpreter2.Email,    
+    "Email Address": vars.testInterpreter2.Email,
     "Department": vars.testInterpreter2.Department,
     "Home Phone #": vars.testInterpreter2.HomePhone,
     "Work Phone #": vars.testInterpreter2.Phone,
     "Cellular Phone #": vars.testInterpreter2.MobilePhone
-	
+
 }
 ]]></ee:set-payload>
 			</ee:message>
@@ -127,20 +127,20 @@ output application/java
 				name="testRecord1" />
 			<flow-ref doc:name="Flow Reference testRecord2" doc:id="89ca7e58-3ee2-4ae9-8f22-9922cd7a5ee4"
 				name="testRecord2" />
-			<flow-ref doc:name="Flow Reference testRecord3" doc:id="f4004c89-4a00-43eb-9c32-3bdd4c6c91d3" 
+			<flow-ref doc:name="Flow Reference testRecord3" doc:id="f4004c89-4a00-43eb-9c32-3bdd4c6c91d3"
 				name="testRecord3"/>
 
 		</munit:execution>
 		<munit:validation>
 			<munit-tools:assert-that doc:name="Assert test migrated testRecord1"
 				doc:id="fdd1795d-4692-4e8d-ba9f-35b5d3121186" expression="#[vars.resultTestRecord1]"
-				is="#[MunitTools::equalTo(1)]" />
+				is="#[MunitTools::equalTo(1)]" message="Assert test migrated testRecord1 has failed"/>
 			<munit-tools:assert-that doc:name="Assert test updated testRecord2"
 				doc:id="f28924c9-de58-408e-91cd-18eda57ea0ea" expression="#[vars.resultTestRecord2]"
-				is="#[MunitTools::equalTo(true)]" />
+				is="#[MunitTools::equalTo(true)]" message="Assert test updated testRecord2 has failed"/>
 			<munit-tools:assert-that doc:name="Assert test not migrated testRecord3"
 			doc:id="5407089e-7060-4952-902d-4f41746ed3f4" expression="#[vars.resultTestRecord3]"
-			is="#[MunitTools::equalTo(0)]" />
+			is="#[MunitTools::equalTo(0)]" message="Assert test not migrated testRecord3 has failed"/>
 		</munit:validation>
 	</munit:test>
 	<sub-flow name="testRecord1" doc:id="d56875b0-d885-4852-9475-4ca1d3596f0c">

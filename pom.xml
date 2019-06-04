@@ -22,9 +22,9 @@
 				<configuration>
 					<sharedLibraries>
 						<!-- Please Add Siebel libraries -->
-						
+
 					</sharedLibraries>
-					<classifier>mule-application</classifier>
+					<classifier>mule-application-template</classifier>
 				</configuration>
 			</plugin>
 			<plugin>
